@@ -1,0 +1,7 @@
+exports.txt
+users.json
+test.py
+
+app/bot/__pycache__
+app/commands/__pycache__
+app/funcs/__pycache__

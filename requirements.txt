@@ -1,0 +1,7 @@
+loguru
+datetime
+pytz
+oci
+py-cord
+pyyaml
+requests
