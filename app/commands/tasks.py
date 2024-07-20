@@ -9,18 +9,21 @@ class PeriodicTaskCog(commands.Cog):
         self.channel_id = self.config.guild_id  # Substitua por um ID de canal específico, se necessário
         self.check_situation.start()  # Inicia a tarefa periódica
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(minutes=5)
     async def check_situation(self):
-        # Iterar através dos usuários e imprimir as contas de Valorant
-        for user in self.config.users:
-            print(f'User ID: {user.discord_id}')
-            for account in user.valorant_accounts:
-                print(f'Account Name: {account.account_name}, PUUID: {account.puuid}, Region: {account.region}')
+        # Lógica para verificar a situação
+        situation_occurred = self.check_some_condition()  # Substitua por sua lógica
 
-        # Exemplo de envio de mensagem a um canal no Discord
-        channel = self.bot.get_channel(self.channel_id)
-        if channel:
-            await channel.send("Atualização das contas de Valorant dos usuários foi realizada!")
+        if situation_occurred:
+            channel = self.bot.get_channel(self.channel_id)
+            if channel:
+                await channel.send("Alerta: Uma situação ocorreu!")
+
+    def check_some_condition(self):
+        # Sua lógica para verificar a situação
+        # Exemplo:
+        # return True se a situação ocorrer
+        return False  # Substitua isso com a condição real
 
     @check_situation.before_loop
     async def before_check_situation(self):
