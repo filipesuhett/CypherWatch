@@ -28,7 +28,6 @@ class ValorantAccount:
         
     def get_user(self, account_name):
         nickname, tag = account_name.split('#')
-        print(f'Nickname: {nickname}, Tag: {tag}')
         url = f'https://api.henrikdev.xyz/valorant/v1/account/{nickname}/{tag}'
         api_key = os.getenv('API_KEY')
         

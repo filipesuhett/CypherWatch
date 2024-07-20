@@ -1,6 +1,8 @@
 exports.txt
 users.json
 test.py
+test1.py
+.gitignore
 
 app/bot/__pycache__
 app/commands/__pycache__

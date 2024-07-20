@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 from bot.config import Config
 from bot.user import User
+from funcs.bot_discord import last_five_matches
 
 class Match_Command(commands.Cog):
     def __init__(self, bot):

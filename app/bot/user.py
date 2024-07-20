@@ -12,6 +12,13 @@ class User:
             self.valorant_accounts.append(account)
             return True
         return False
+    
+    def remove_account(self, account_name):
+        for acc in self.valorant_accounts:
+            if acc.account_name == account_name:
+                self.valorant_accounts.remove(acc)
+                return True
+        return False
 
     def to_dict(self):
         return {
