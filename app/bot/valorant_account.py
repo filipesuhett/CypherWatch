@@ -1,34 +1,52 @@
-import discord
-from discord.ext import commands, tasks
-from bot.config import Config
+import json
+import requests
+import os
 
-class PeriodicTaskCog(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-        self.config = Config()
-        self.channel_id = self.config.guild_id  # Substitua por um ID de canal específico, se necessário
-        self.check_situation.start()  # Inicia a tarefa periódica
+class ValorantAccount:
+    def __init__(self, account_name, puuid=None, region=None):
+        self.account_name = account_name
+        if puuid is None or region is None:
+            self.puuid, self.region = self.get_user(account_name)
+        else:
+            self.puuid = puuid
+            self.region = region
 
-    @tasks.loop(minutes=1)
-    async def check_situation(self):
-        # Iterar através dos usuários e imprimir as contas de Valorant
-        for user in self.config.users:
-            print(f'User ID: {user.discord_id}')
-            for account in user.valorant_accounts:
-                print(f'Account Name: {account.account_name}, PUUID: {account.puuid}, Region: {account.region}')
+    def to_dict(self):
+        return {
+            'account_name': self.account_name,
+            'puuid': self.puuid,
+            'region': self.region
+        }
 
-        # Exemplo de envio de mensagem a um canal no Discord
-        channel = self.bot.get_channel(self.channel_id)
-        if channel:
-            await channel.send("Atualização das contas de Valorant dos usuários foi realizada!")
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            account_name=data['account_name'],
+            puuid=data.get('puuid'),
+            region=data.get('region')
+        )
+        
+    def get_user(self, account_name):
+        nickname, tag = account_name.split('#')
+        print(f'Nickname: {nickname}, Tag: {tag}')
+        url = f'https://api.henrikdev.xyz/valorant/v1/account/{nickname}/{tag}'
+        api_key = os.getenv('API_KEY')
+        
+        # Parâmetros da requisição
+        params = {'api_key': api_key}
 
-    @check_situation.before_loop
-    async def before_check_situation(self):
-        await self.bot.wait_until_ready()
+        # Fazendo a requisição GET
+        response = requests.get(url, params=params)
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print(f'{self.bot.user} has connected to Discord!')
+        if response.status_code == 200:
+            # Obtém o conteúdo da resposta em JSON
+            data = response.json()
 
-def setup(bot):
-    bot.add_cog(PeriodicTaskCog(bot))
+            # Extraindo puuid e region
+            puuid = data['data']['puuid']
+            region = data['data']['region']
+
+            return puuid, region
+        else:
+            print(f'Error: {response}')
+            return None, None
