@@ -1,4 +1,3 @@
-# commands/users.py
 import discord
 from discord.ext import commands
 from bot.config import Config
@@ -14,17 +13,23 @@ class Users_Command(commands.Cog):
     async def register(self, ctx):
         await ctx.defer()
         config = Config()
+        # Verifica se o usuário já está registrado
         if any(user.discord_id == ctx.author.id for user in config.users):
             await ctx.respond("You are already registered!", ephemeral=True)
             return
-        user = ctx.author
-        User(user.id)
-        await ctx.respond(f"User {user.name} registered successfully!", ephemeral=True)
+        # Adiciona o novo usuário
+        user = config.add_user(ctx.author.id)
+        
+        if user:
+            await ctx.respond(f"User {ctx.author.name} registered successfully!", ephemeral=True)
+        else:
+            await ctx.respond("There was an error registering the user. Please try again.", ephemeral=True)
 
     @commands.slash_command(name="add_account", description="Add a Valorant account to your profile", pass_context=True, guild_ids=[Config().guild_id])
     async def add_account(self, ctx, account_name: str):
         await ctx.defer()
         config = Config()
+        # Encontra o usuário registrado
         user = next((u for u in config.users if u.discord_id == ctx.author.id), None)
         
         if user is None:

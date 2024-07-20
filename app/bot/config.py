@@ -4,6 +4,7 @@ import discord
 from bot.bot import Bot
 from bot.user_manager import UserManager
 from bot.user import User
+from bot.user import User
 
 class Config:
     _instance = None
@@ -27,12 +28,14 @@ class Config:
         self.guild_id = os.getenv('GUILD_ID')
         self.dry_run = os.getenv('DRY_RUN')
         self.api_key = os.getenv('API_KEY')
+        self.api_key = os.getenv('API_KEY')
         self.users = UserManager.load_users()
         
         # Initialize the bot
         intents = discord.Intents.all()
         intents.message_content = True
         self.bot = Bot(command_prefix='/', help_command=None, intents=intents)
+
 
     def save_users(self):
         """Save the users to a JSON file."""
