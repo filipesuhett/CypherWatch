@@ -16,21 +16,27 @@ class PeriodicTaskCog(commands.Cog):
 
         for user in self.config.users:
             for account in user.valorant_accounts:
-                embed = await verify_match(account.puuid, account.region, Config().api_key)  # Await here
-                if embed:
-                    if channel:
-                        try:
-                            # Enviar mensagem com menção ao usuário
-                            user_mention = f"<@{user.discord_id}>"
-                            # user_mention = f""
-                            await channel.send(f"{user_mention} Match details:", embed=embed)
-                        except discord.Forbidden:
-                            print(f'Não tenho permissão para enviar mensagens no canal {self.channel_id}')
-                        except discord.HTTPException as e:
-                            print(f'Ocorreu um erro ao tentar enviar a mensagem: {e}')
-                    else:
-                        print(f'Canal com ID {self.channel_id} não encontrado.')
-
+                if account.has_notificated == False:  # Verifica se o usuário possui notificação
+                    embed = await verify_match(account.puuid, account.region, Config().api_key)  # Await here
+                    if embed:
+                        if channel:
+                            try:
+                                # Enviar mensagem com menção ao usuário
+                                user_mention = f"<@{user.discord_id}>"
+                                # user_mention = f""
+                                if account.to_mark:
+                                    await channel.send(f"{user_mention} Match details:", embed=embed)
+                                else:
+                                    await channel.send(f"Match details:", embed=embed)
+                                account.has_notificated = True
+                            except discord.Forbidden:
+                                print(f'Não tenho permissão para enviar mensagens no canal {self.channel_id}')
+                            except discord.HTTPException as e:
+                                print(f'Ocorreu um erro ao tentar enviar a mensagem: {e}')
+                        else:
+                            print(f'Canal com ID {self.channel_id} não encontrado.')
+                else:
+                    account.has_notificated = False
     @check_situation.before_loop
     async def before_check_situation(self):
         await self.bot.wait_until_ready()

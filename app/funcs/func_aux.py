@@ -289,7 +289,7 @@ async def verify_match(puuid, region, api_key):
         data = {"data": []}
 
     current_time = datetime.now(timezone.utc)
-    five_minutes_ago = current_time - timedelta(minutes=10)
+    five_minutes_ago = current_time - timedelta(minutes=18)
 
     for match in data.get('data', []):
         if isinstance(match, dict):
@@ -347,9 +347,9 @@ async def embed_match_history(match_data):
     if mmr_change_aux > ranking_in_tier and "+" in match_data['mmr_change']:
         rr_points = f"**Rank Points Change:** RANK UP CONGRATULATIONS\n"
         bar_list = f"**Ranking in Tier:** {progress_bar} {ranking_in_tier}/100 - RANK UP"
-    elif (- mmr_change_aux) + ranking_in_tier == 100:
+    elif mmr_change_aux + ranking_in_tier == 100:
         rr_points = f"**Rank Points Change:** RANK DOWN ITS SAD\n"
-        bar_list = f"**Ranking in Tier:** {progress_bar} {ranking_in_tier}/100 - RANK DOWN ITS SAD"
+        bar_list = f"**Ranking in Tier:** {progress_bar} {ranking_in_tier}/100 - RANK DOWN"
     else:
         rr_points = f"**Rank Points Change:** {match_data['mmr_change']}\n"
         bar_list = f"**Ranking in Tier:** {progress_bar} {ranking_in_tier}/100"

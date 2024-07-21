@@ -28,14 +28,24 @@ class Config:
         self.guild_id = os.getenv('GUILD_ID')
         self.dry_run = os.getenv('DRY_RUN')
         self.api_key = os.getenv('API_KEY')
-        self.api_key = os.getenv('API_KEY')
         self.users = UserManager.load_users()
-        
+
+        # Ensure all accounts have the 'has_notificated' and 'to_mark' fields
+        self.ensure_additional_fields()
+
         # Initialize the bot
         intents = discord.Intents.all()
         intents.message_content = True
         self.bot = Bot(command_prefix='/', help_command=None, intents=intents)
 
+    def ensure_additional_fields(self):
+        for user in self.users:
+            for account in user.valorant_accounts:
+                if not hasattr(account, 'has_notificated'):
+                    account.has_notificated = False
+                if not hasattr(account, 'to_mark'):
+                    account.to_mark = False
+        self.save_users()
 
     def save_users(self):
         """Save the users to a JSON file."""

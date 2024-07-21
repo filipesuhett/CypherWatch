@@ -5,10 +5,10 @@ class User:
         self.discord_id = discord_id
         self.valorant_accounts = []
 
-    def add_account(self, account_name, account_id=None):
+    def add_account(self, account_name, tag_me=False, account_id=None):
         # Check if account already exists
         if not any(acc.account_name == account_name for acc in self.valorant_accounts):
-            account = ValorantAccount(account_name, account_id)
+            account = ValorantAccount(account_name, account_id, to_mark=tag_me)
             self.valorant_accounts.append(account)
             return True
         return False

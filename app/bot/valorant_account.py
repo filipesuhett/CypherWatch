@@ -1,10 +1,12 @@
 import json
-import requests
 import os
+import requests
 
 class ValorantAccount:
-    def __init__(self, account_name, puuid=None, region=None):
+    def __init__(self, account_name, puuid=None, region=None, has_notificated=False, to_mark=False):
         self.account_name = account_name
+        self.has_notificated = has_notificated
+        self.to_mark = to_mark
         if puuid is None or region is None:
             self.puuid, self.region = self.get_user(account_name)
         else:
@@ -15,7 +17,9 @@ class ValorantAccount:
         return {
             'account_name': self.account_name,
             'puuid': self.puuid,
-            'region': self.region
+            'region': self.region,
+            'has_notificated': self.has_notificated,
+            'to_mark': self.to_mark
         }
 
     @classmethod
@@ -23,7 +27,9 @@ class ValorantAccount:
         return cls(
             account_name=data['account_name'],
             puuid=data.get('puuid'),
-            region=data.get('region')
+            region=data.get('region'),
+            has_notificated=data.get('has_notificated', False),  # Default to False if not present
+            to_mark=data.get('to_mark', False)  # Default to False if not present
         )
         
     def get_user(self, account_name):
