@@ -6,7 +6,7 @@ from funcs.button_account import Button_account
 from bot.config import Config
 from funcs.func_aux import find_player_data
 
-async def last_five_matches(ctx, user):
+async def last_five_matches(ctx, user, one_to_five_matchs):
     if len(user.valorant_accounts) == 0:
         await ctx.respond("You need to add at least one Valorant account first!", ephemeral=True)
         return
@@ -14,7 +14,7 @@ async def last_five_matches(ctx, user):
         puuid = user.valorant_accounts[0].puuid
         region = user.valorant_accounts[0].region
         api_key = Config().api_key
-        await find_player_data(puuid, region, api_key, ctx)
+        await find_player_data(puuid, region, api_key, ctx, one_to_five_matchs)
         return
     else:
         try:
@@ -31,14 +31,14 @@ async def last_five_matches(ctx, user):
                 puuid = user.valorant_accounts[0].puuid
                 region = user.valorant_accounts[0].region
                 api_key = Config().api_key
-                await find_player_data(puuid, region, api_key, ctx)
+                await find_player_data(puuid, region, api_key, ctx, one_to_five_matchs)
                 return
             elif view.value == 2:
                 await message.edit(content='Next step...', view=None)
                 puuid = user.valorant_accounts[1].puuid
                 region = user.valorant_accounts[1].region
                 api_key = Config().api_key
-                await find_player_data(puuid, region, api_key, ctx)
+                await find_player_data(puuid, region, api_key, ctx, one_to_five_matchs)
                 return              
             else:
                 await message.edit(content='Operation canceled.', view=None)

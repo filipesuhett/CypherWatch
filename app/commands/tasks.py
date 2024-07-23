@@ -1,18 +1,20 @@
 import discord
 from discord.ext import commands, tasks
 from bot.config import Config
-from funcs.func_aux import verify_match
-
+from funcs.func_aux import verify_match, account_data
+import asyncio
 class PeriodicTaskCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config()
         self.channel_id = 1264224851216957493  # ID do canal como um inteiro
-        self.check_situation.start()  # Inicia a tarefa periódica
+        self.check_situation.start()   # Inicia a tarefa periódica
 
     @tasks.loop(minutes=10)
     async def check_situation(self):
         channel = self.bot.get_channel(self.channel_id)
+
+        count = 0  # Contador para rastrear o número de contas processadas
 
         for user in self.config.users:
             for account in user.valorant_accounts:
@@ -35,8 +37,16 @@ class PeriodicTaskCog(commands.Cog):
                                 print(f'Ocorreu um erro ao tentar enviar a mensagem: {e}')
                         else:
                             print(f'Canal com ID {self.channel_id} não encontrado.')
-                else:
-                    account.has_notificated = False
+                    else:
+                        account.has_notificated = False
+                
+                count += 1  # Incrementa o contador
+
+                # Verifica se já processou 5 contas e, se sim, faz uma pausa de 1 minuto
+                if count % 6 == 0:
+                    print("Pausando por 1 minuto...")
+                    await asyncio.sleep(60)  # Delay de 1 minuto
+                    
     @check_situation.before_loop
     async def before_check_situation(self):
         await self.bot.wait_until_ready()

@@ -44,9 +44,13 @@ async def get_mmr_by_match_id(match_id, puuid, region, api_key):
         print('Request timed out')
     return None
 
-async def embed_matches(match_data_list, ctx):
+async def embed_matches(match_data_list, ctx, one_to_five_matchs):
+    if one_to_five_matchs == 1:
+        title = "**Resume Last Match**"
+    else:
+        title = f"**Resume Last {one_to_five_matchs} Matches**"
     embed = discord.Embed(
-        title="**Resume Last 5 Matches**",
+        title=title,
         color=0x1abc9c
     )
 
@@ -104,7 +108,8 @@ async def embed_matches(match_data_list, ctx):
     else:
         print("ctx is not a valid commands.Context, discord.Interaction, or ApplicationContext object")
 
-async def find_player_data(puuid, region, api_key, ctx):
+async def find_player_data(puuid, region, api_key, ctx, one_to_five_matchs):
+    cont = 0
     url = f'https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/{region}/{puuid}'
     params = {'api_key': api_key}
     try:
@@ -122,6 +127,8 @@ async def find_player_data(puuid, region, api_key, ctx):
     match_data_list = []
 
     for match in response_data.get("data", []):
+        if cont == one_to_five_matchs:
+            break
         metadata = match.get("metadata", {})
         map_name = metadata.get("map", "Unknown")
         match_id = metadata.get("matchid", "Unknown")
@@ -183,9 +190,11 @@ async def find_player_data(puuid, region, api_key, ctx):
                 }
 
                 match_data_list.append(match_data)
+                
+                cont += 1
 
     if match_data_list:
-        await embed_matches(match_data_list, ctx)
+        await embed_matches(match_data_list, ctx, one_to_five_matchs)
     else:
         await ctx.send("No match data found.")
 
@@ -375,3 +384,67 @@ async def embed_match_history(match_data):
     embed.set_footer(text="Cypher Watch | Data from Valorant API")
 
     return embed
+
+async def account_data(puuid, region, api_key):
+    url = f'https://api.henrikdev.xyz/valorant/v1/by-puuid/mmr-history/{region}/{puuid}'
+    params = {'api_key': api_key}
+    response_data = {}
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params, timeout=10) as response:
+                if response.status == 200:
+                    response_data = await response.json()
+                else:
+                    print(f'Error: {response.status}')
+                    response_data = {"data": []}
+    except asyncio.TimeoutError:
+        print('Request timed out')
+
+    if 'data' not in response_data:
+        print("Chave 'data' não encontrada na resposta da API:")
+        print(response_data)
+        return None
+
+    if len(response_data["data"]) == 0:
+        print("Nenhum dado encontrado na resposta da API.")
+        result = {
+            "currenttierpatched": "Unrated",
+            "elo": 0,
+            "name": response_data["name"],
+            "tag": response_data["tag"],
+            "total_mmr_change": 0,
+            "ranking_in_tier": 0
+        }
+        return result
+
+    first_response = response_data["data"][0]
+    currenttierpatched = first_response["currenttierpatched"]
+    elo = int(first_response["elo"])
+    name = response_data["name"]
+    tag = response_data["tag"]
+    ranking_in_tier = first_response["ranking_in_tier"]
+
+    target_date = datetime.now().strftime("%A, %B %d, %Y")
+    total_mmr_change = 0
+
+    for match in response_data["data"]:
+        match_date = datetime.strptime(match["date"], "%A, %B %d, %Y %I:%M %p").strftime("%A, %B %d, %Y")
+        if match_date == target_date:
+            total_mmr_change += match.get("mmr_change_to_last_game", 0)
+
+    if total_mmr_change > 0:
+        total_mmr_change = "+" + str(total_mmr_change)
+    else:
+        total_mmr_change = str(total_mmr_change)
+
+    result = {
+        "currenttierpatched": currenttierpatched,
+        "elo": elo,
+        "name": name,
+        "tag": tag,
+        "total_mmr_change": total_mmr_change,
+        "ranking_in_tier": ranking_in_tier
+    }
+    
+    return result
