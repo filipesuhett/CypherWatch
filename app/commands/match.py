@@ -59,7 +59,7 @@ class Match_Command(commands.Cog):
         for i, account in enumerate(sorted_leaderboard, start=1):
             player_info = (
                 f"**Rank:** {account['currenttierpatched']}\n"
-                f"**Ranking in Tier:** {account['ranking_in_tier']} RR\n"
+                f"**Ranking in Tier:** {account['progress_bar']} {account['ranking_in_tier']}/100\n"
                 f"**RR Change:** {account['total_mmr_change']}\n"
             )
             embed.add_field(

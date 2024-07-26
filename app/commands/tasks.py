@@ -39,7 +39,8 @@ class PeriodicTaskCog(commands.Cog):
                             print(f'Canal com ID {self.channel_id} não encontrado.')
                     else:
                         account.has_notificated = False
-                
+                else:
+                    account.has_notificated = False
                 count += 1  # Incrementa o contador
 
                 # Verifica se já processou 5 contas e, se sim, faz uma pausa de 1 minuto

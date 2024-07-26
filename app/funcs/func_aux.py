@@ -1,4 +1,5 @@
 import aiohttp
+import pytz
 import discord
 from discord.ext import commands
 import asyncio
@@ -408,16 +409,20 @@ async def account_data(puuid, region, api_key):
 
     if len(response_data["data"]) == 0:
         print("Nenhum dado encontrado na resposta da API.")
+        progress_bar = create_progress_bar(0, 100)
+        
         result = {
             "currenttierpatched": "Unrated",
             "elo": 0,
             "name": response_data["name"],
             "tag": response_data["tag"],
             "total_mmr_change": 0,
-            "ranking_in_tier": 0
+            "ranking_in_tier": 0,
+            "progress_bar": progress_bar
         }
         return result
 
+# Supondo que 'response_data' já esteja definido anteriormente
     first_response = response_data["data"][0]
     currenttierpatched = first_response["currenttierpatched"]
     elo = int(first_response["elo"])
@@ -425,18 +430,27 @@ async def account_data(puuid, region, api_key):
     tag = response_data["tag"]
     ranking_in_tier = first_response["ranking_in_tier"]
 
-    target_date = datetime.now().strftime("%A, %B %d, %Y")
+    # Define a timezone para GMT-3
+    gmt_minus_3 = pytz.timezone('Etc/GMT+3')
+
+    # Ajusta a data atual para GMT-3
+    target_date = datetime.now(pytz.utc).astimezone(gmt_minus_3).strftime("%A, %B %d, %Y")
     total_mmr_change = 0
 
     for match in response_data["data"]:
-        match_date = datetime.strptime(match["date"], "%A, %B %d, %Y %I:%M %p").strftime("%A, %B %d, %Y")
-        if match_date == target_date:
+        # Ajusta a data do match para GMT-3
+        match_date_utc = datetime.strptime(match["date"], "%A, %B %d, %Y %I:%M %p")
+        match_date_gmt_minus_3 = match_date_utc.replace(tzinfo=pytz.utc).astimezone(gmt_minus_3).strftime("%A, %B %d, %Y")
+        
+        if match_date_gmt_minus_3 == target_date:
             total_mmr_change += match.get("mmr_change_to_last_game", 0)
 
     if total_mmr_change > 0:
         total_mmr_change = "+" + str(total_mmr_change)
     else:
         total_mmr_change = str(total_mmr_change)
+        
+    progress_bar = create_progress_bar(ranking_in_tier, 100)
 
     result = {
         "currenttierpatched": currenttierpatched,
@@ -444,7 +458,8 @@ async def account_data(puuid, region, api_key):
         "name": name,
         "tag": tag,
         "total_mmr_change": total_mmr_change,
-        "ranking_in_tier": ranking_in_tier
+        "ranking_in_tier": ranking_in_tier,
+        "progress_bar": progress_bar
     }
     
     return result
