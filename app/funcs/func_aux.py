@@ -80,7 +80,7 @@ async def embed_matches(match_data_list, ctx, one_to_five_matchs):
         
         
         embed.add_field(
-            name=f"**Result:** {match_data['result']}",
+            name=f"**Result:** {match_data['result']} - {match_data['position']}",
             value=(
                 f"**🕹️ Info:**\n"
                 f"**Map:** {match_data['map_name']}\n"
@@ -88,11 +88,17 @@ async def embed_matches(match_data_list, ctx, one_to_five_matchs):
                 f"**Nickname:** {match_data['nickname']}\n"
                 f"**Character:** {match_data['character']}\n\n"
                 f"**🎯 Performance:**\n"
-                f"**KDA:** {match_data['kills']}/{match_data['deaths']}/{match_data['assists']}\n\n"
+                f"**Stats:** {match_data['kills']}/{match_data['deaths']}/{match_data['assists']}\n"
+                f"**KD:** {match_data['kd']}\n"
+                f"**KDA:** {match_data['kda']}\n"
+                f"**HS%:** {match_data['headshot_percentage']}\n"
+                f"**ACS:** {match_data['acs']}\n"
+                f"**ADR:** {match_data['damage_per_round']}\n\n"
                 f"**📈 Rank Change:**\n"
                 f"**Tier:** {match_data['tier_patched']}\n"
                 f"{rr_points}"
-                f"{bar_list}"
+                f"{bar_list}\n\n"
+                f"**For more information about acronymos type /info**"
             ),
             inline=False
         )
@@ -135,8 +141,15 @@ async def find_player_data(puuid, region, api_key, ctx, one_to_five_matchs):
         match_id = metadata.get("matchid", "Unknown")
         mode = metadata.get("mode", "Unknown")
         aux = 0
+        count = 0
+        
+        players = match.get("players", {}).get("all_players", [])
 
-        for player in match.get("players", {}).get("all_players", []):
+        # Ordenando os jogadores pela pontuação (score) em ordem decrescente
+        sorted_players = sorted(players, key=lambda x: x['stats']['score'], reverse=True)
+
+        for player in sorted_players:
+            count += 1
             if player.get("puuid") == puuid:
                 nickname = f"{player.get('name', 'Unknown')}#{player.get('tag', 'Unknown')}"
                 character = player.get("character", "Unknown")
@@ -144,6 +157,26 @@ async def find_player_data(puuid, region, api_key, ctx, one_to_five_matchs):
                 kills = player_stats.get("kills", 0)
                 assists = player_stats.get("assists", 0)
                 deaths = player_stats.get("deaths", 0)
+                rounds = metadata.get("rounds_played", 0)
+                score = player_stats.get("score", 0)
+                headshots = player_stats.get("headshots", 0)
+                bodyshots = player_stats.get("bodyshots", 0)
+                legshots = player_stats.get("legshots", 0)
+                acs = round(score/rounds, 1)
+                kd = round(kills/deaths, 2)
+                kda = round((kills + assists)/deaths, 2)
+                damage_made = player.get("damage_made", 0)
+                damage_per_round = round(damage_made/rounds, 1)
+                
+                # Calculando a soma total de tiros
+                total_shots = headshots + bodyshots + legshots
+
+                # Calculando a porcentagem de headshots
+                if total_shots > 0:
+                    headshot_percentage = (headshots / total_shots) * 100
+                    headshot_percentage_rounded = round(headshot_percentage, 0)
+                else:
+                    headshot_percentage_rounded = 0.00
                 
                 mmr_data = await get_mmr_by_match_id(match_id, puuid, region, api_key)
                 
@@ -175,6 +208,16 @@ async def find_player_data(puuid, region, api_key, ctx, one_to_five_matchs):
                 else:
                     result = "Defeat"
                     
+                                    
+                if count == 1:
+                    position = f"{count}st"
+                elif count == 2:
+                    position = f"{count}nd"
+                elif count == 3:
+                    position = f"{count}rd"
+                else:
+                    position = f"{count}th"
+                    
                 match_data = {
                     "map_name": map_name,
                     "match_id": match_id,
@@ -187,7 +230,14 @@ async def find_player_data(puuid, region, api_key, ctx, one_to_five_matchs):
                     "mmr_change": mmr_change,
                     "character": character,
                     "nickname": nickname,
-                    "result": result
+                    "result": result,
+                    "damage_per_round": damage_per_round,
+                    "acs": acs,
+                    "kd": kd,
+                    "kda": kda,
+                    "headshot_percentage": headshot_percentage_rounded,
+                    "position": position
+                    
                 }
 
                 match_data_list.append(match_data)
@@ -216,6 +266,7 @@ async def find_player_match_data(match_id, puuid, region, api_key):
 
     match_data = None
     data = response_data.get("data", {})
+    cont = 0
     aux = 0
     
     if isinstance(data, dict):
@@ -223,8 +274,14 @@ async def find_player_match_data(match_id, puuid, region, api_key):
         map_name = metadata.get("map", "Unknown")
         match_id = metadata.get("matchid", "Unknown")
         mode = metadata.get("mode", "Unknown")
+        
+        players = data.get("players", {}).get("all_players", [])
 
-        for player in data.get("players", {}).get("all_players", []):
+        # Ordenando os jogadores pela pontuação (score) em ordem decrescente
+        sorted_players = sorted(players, key=lambda x: x['stats']['score'], reverse=True)
+
+        for player in sorted_players:
+            cont += 1
             if player.get("puuid") == puuid:
                 nickname = f"{player.get('name', 'Unknown')}#{player.get('tag', 'Unknown')}"
                 character = player.get("character", "Unknown")
@@ -232,6 +289,26 @@ async def find_player_match_data(match_id, puuid, region, api_key):
                 kills = player_stats.get("kills", 0)
                 assists = player_stats.get("assists", 0)
                 deaths = player_stats.get("deaths", 0)
+                rounds = metadata.get("rounds_played", 0)
+                score = player_stats.get("score", 0)
+                headshots = player_stats.get("headshots", 0)
+                bodyshots = player_stats.get("bodyshots", 0)
+                legshots = player_stats.get("legshots", 0)
+                acs = round(score/rounds, 1)
+                kd = round(kills/deaths, 2)
+                kda = round((kills + assists)/deaths, 2)
+                damage_made = player.get("damage_made", 0)
+                damage_per_round = round(damage_made/rounds, 1)
+                
+                # Calculando a soma total de tiros
+                total_shots = headshots + bodyshots + legshots
+
+                # Calculando a porcentagem de headshots
+                if total_shots > 0:
+                    headshot_percentage = (headshots / total_shots) * 100
+                    headshot_percentage_rounded = round(headshot_percentage, 0)
+                else:
+                    headshot_percentage_rounded = 0.00
                 
                 mmr_data = await get_mmr_by_match_id(match_id, puuid, region, api_key)
                 
@@ -262,6 +339,15 @@ async def find_player_match_data(match_id, puuid, region, api_key):
                     result = "Vitory"
                 else:
                     result = "Defeat"
+                    
+                if cont == 1:
+                    position = f"{cont}st"
+                elif cont == 2:
+                    position = f"{cont}nd"
+                elif cont == 3:
+                    position = f"{cont}rd"
+                else:
+                    position = f"{cont}th"
                 
                 match_data = {
                     "map_name": map_name,
@@ -275,7 +361,13 @@ async def find_player_match_data(match_id, puuid, region, api_key):
                     "mmr_change": mmr_change,
                     "character": character,
                     "nickname": nickname,
-                    "result": result
+                    "result": result,
+                    "damage_per_round": damage_per_round,
+                    "acs": acs,
+                    "kd": kd,
+                    "kda": kda,
+                    "headshot_percentage": headshot_percentage_rounded,
+                    "position": position
                 }
                 break
         if match_data:
@@ -366,7 +458,7 @@ async def embed_match_history(match_data):
     
     
     embed.add_field(
-        name=f"**Result:** {match_data['result']}",
+        name=f"**Result:** {match_data['result']} - {match_data['position']}",
         value=(
             f"**🕹️ Info:**\n"
             f"**Map:** {match_data['map_name']}\n"
@@ -374,11 +466,17 @@ async def embed_match_history(match_data):
             f"**Nickname:** {match_data['nickname']}\n"
             f"**Character:** {match_data['character']}\n\n"
             f"**🎯 Performance:**\n"
-            f"**KDA:** {match_data['kills']}/{match_data['deaths']}/{match_data['assists']}\n\n"
+            f"**Stats:** {match_data['kills']}/{match_data['deaths']}/{match_data['assists']}\n"
+            f"**KD:** {match_data['kd']}\n"
+            f"**KDA:** {match_data['kda']}\n"
+            f"**HS%:** {match_data['headshot_percentage']}\n"
+            f"**ACS:** {match_data['acs']}\n"
+            f"**ADR:** {match_data['damage_per_round']}\n\n"
             f"**📈 Rank Change:**\n"
             f"**Tier:** {match_data['tier_patched']}\n"
             f"{rr_points}"
-            f"{bar_list}"
+            f"{bar_list}\n\n"
+            f"**For more information about acronymos type /info**"
         ),
         inline=False
     )
