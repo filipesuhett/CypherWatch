@@ -5,6 +5,7 @@ from bot.bot import Bot
 from bot.user_manager import UserManager
 from bot.user import User
 from bot.user import User
+from bot.async_api_manager import AsyncAPIManager
 
 class Config:
     _instance = None
@@ -27,7 +28,8 @@ class Config:
         self.brazil = pytz.timezone("America/Sao_Paulo")
         self.guild_id = os.getenv('GUILD_ID')
         self.dry_run = os.getenv('DRY_RUN')
-        self.api_key = os.getenv('API_KEY')
+        self.api_keys = os.getenv('API_KEYS').split(",")
+        self.api_key = os.getenv('API_KEY')  # Assumes multiple API keys are comma-separated
         self.users = UserManager.load_users()
 
         # Ensure all accounts have the 'has_notificated' and 'to_mark' fields
@@ -37,6 +39,9 @@ class Config:
         intents = discord.Intents.all()
         intents.message_content = True
         self.bot = Bot(command_prefix='/', help_command=None, intents=intents)
+
+        # Initialize API manager
+        self.api_manager = AsyncAPIManager(self.api_keys)
 
     def ensure_additional_fields(self):
         for user in self.users:
@@ -68,3 +73,6 @@ class Config:
             self.save_users()
             return user
         return None
+    
+    async def make_request(self, url, params=None):
+        return await self.api_manager.get(url, params=params)

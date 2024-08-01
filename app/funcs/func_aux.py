@@ -2,6 +2,7 @@ import aiohttp
 import pytz
 import discord
 from discord.ext import commands
+from bot.config import Config
 import asyncio
 import json
 from datetime import datetime, timedelta, timezone
@@ -15,32 +16,28 @@ def create_progress_bar(value, max_value, length=10):
 async def account_check(account_name):
     nickname, tag = account_name.split('#')
     url = f'https://api.henrikdev.xyz/valorant/v1/account/{nickname}/{tag}'
-    params = {'api_key': 'HDEV-7ec2639e-80ba-4ed5-b1f5-efc19d248be6'}
+    params = {}
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, timeout=10) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    return True
-                else:
-                    print(f'Error fetching account data: {response.status}')
+        response, status = await Config().make_request(url, params=params)
+        if status == 200:
+            return True
+        else:
+            print(f'Error fetching account data: {status}')
     except asyncio.TimeoutError:
         print('Request timed out')
     return False
 
 async def get_mmr_by_match_id(match_id, puuid, region, api_key):
     url = f"https://api.henrikdev.xyz/valorant/v1/by-puuid/mmr-history/{region}/{puuid}"
-    params = {'api_key': api_key}
+    params = {}
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, timeout=10) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    for record in data["data"]:
-                        if record["match_id"] == match_id:
-                            return record
-                else:
-                    print(f'Error fetching MMR data: {response.status}')
+        data, status = await Config().make_request(url, params=params)
+        if status == 200:
+            for record in data["data"]:
+                if record["match_id"] == match_id:
+                    return record
+        else:
+            print(f'Error fetching MMR data: {status}')
     except asyncio.TimeoutError:
         print('Request timed out')
     return None
@@ -118,15 +115,12 @@ async def embed_matches(match_data_list, ctx, one_to_five_matchs):
 async def find_player_data(puuid, region, api_key, ctx, one_to_five_matchs):
     cont = 0
     url = f'https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/{region}/{puuid}'
-    params = {'api_key': api_key}
+    params = {}
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, timeout=10) as response:
-                if response.status == 200:
-                    response_data = await response.json()
-                else:
-                    print(f'Error fetching player data: {response.status}')
-                    return
+        response_data, status = await Config().make_request(url, params=params)
+        if status != 200:
+            print(f'Error fetching player data: {status}')
+            return
     except asyncio.TimeoutError:
         print('Request timed out')
         return
@@ -251,15 +245,12 @@ async def find_player_data(puuid, region, api_key, ctx, one_to_five_matchs):
 
 async def find_player_match_data(match_id, puuid, region, api_key):
     url = f"https://api.henrikdev.xyz/valorant/v2/match/{match_id}"
-    params = {'api_key': api_key}
+    params = {}
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, timeout=10) as response:
-                if response.status == 200:
-                    response_data = await response.json()
-                else:
-                    print(f'Error fetching match data: {response.status}')
-                    return None
+        response_data, status = await Config().make_request(url, params=params)
+        if status != 200:
+            print(f'Error fetching match data: {status}')
+            return None
     except asyncio.TimeoutError:
         print('Request timed out')
         return None
@@ -377,15 +368,12 @@ async def find_player_match_data(match_id, puuid, region, api_key):
 
 async def verify_match(puuid, region, api_key):
     url = f'https://api.henrikdev.xyz/valorant/v1/by-puuid/mmr-history/{region}/{puuid}'
-    params = {'api_key': api_key}
+    params = {}
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, timeout=10) as response:
-                if response.status == 200:
-                    data = await response.json()
-                else:
-                    print(f'Error: {response.status}')
-                    data = {"data": []}
+        data, status = await Config().make_request(url, params=params)
+        if status != 200:
+            print(f'Error: {response.status}')
+            data = {"data": []}
     except asyncio.TimeoutError:
         print('Request timed out')
         data = {"data": []}
@@ -409,19 +397,22 @@ async def verify_match(puuid, region, api_key):
                             response_data = {"data": []}
             except asyncio.TimeoutError:
                 print('Request timed out')
-            data = response_data.get("data", {})
-            
-            if isinstance(data, dict):
-                metadata = data.get("metadata", {})
-                game_length = metadata.get("game_length", 0)
-                match_time += game_length
-                match_time = datetime.fromtimestamp(match_time, timezone.utc)
-                print(f"Match played at {match_time}. vs {five_minutes_ago} - {five_minutes_ago - match_time}")
-            if match_time > five_minutes_ago:
-                match_data = await find_player_match_data(match.get("match_id", ''), puuid, region, api_key)
-                if match_data:
-                    embed = await embed_match_history(match_data)
-                    return embed
+                
+            try:
+                data = response_data.get("data", {})
+                if isinstance(data, dict):
+                    metadata = data.get("metadata", {})
+                    game_length = metadata.get("game_length", 0)
+                    match_time += game_length
+                    match_time = datetime.fromtimestamp(match_time, timezone.utc)
+                    print(f"Match played at {match_time}. vs {five_minutes_ago} - {five_minutes_ago - match_time}")
+                if match_time > five_minutes_ago:
+                    match_data = await find_player_match_data(match.get("match_id", ''), puuid, region, api_key)
+                    if match_data:
+                        embed = await embed_match_history(match_data)
+                        return embed
+            except Exception as e:
+                print("Dados não encontrados na resposta da API. Erro")
         break
     else:
         print("No match played in the last 30 minutes.")
@@ -486,17 +477,13 @@ async def embed_match_history(match_data):
 
 async def account_data(puuid, region, api_key):
     url = f'https://api.henrikdev.xyz/valorant/v1/by-puuid/mmr-history/{region}/{puuid}'
-    params = {'api_key': api_key}
+    params = {}
     response_data = {}
-
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, timeout=10) as response:
-                if response.status == 200:
-                    response_data = await response.json()
-                else:
-                    print(f'Error: {response.status}')
-                    response_data = {"data": []}
+        response_data, status = await Config().make_request(url, params=params)
+        if status != 200:
+            print(f'Error: {status}')
+            response_data = {"data": []}
     except asyncio.TimeoutError:
         print('Request timed out')
 

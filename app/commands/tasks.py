@@ -43,10 +43,10 @@ class PeriodicTaskCog(commands.Cog):
                     account.has_notificated = False
                 count += 1  # Incrementa o contador
 
-                # Verifica se já processou 5 contas e, se sim, faz uma pausa de 1 minuto
-                if count % 6 == 0:
-                    print("Pausando por 1 minuto...")
-                    await asyncio.sleep(60)  # Delay de 1 minuto
+                # # Verifica se já processou 5 contas e, se sim, faz uma pausa de 1 minuto
+                # if count % 6 == 0:
+                #     print("Pausando por 1 minuto...")
+                #     await asyncio.sleep(60)  # Delay de 1 minuto
                     
     @check_situation.before_loop
     async def before_check_situation(self):
