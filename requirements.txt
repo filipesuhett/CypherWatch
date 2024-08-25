@@ -5,3 +5,4 @@ oci
 py-cord
 pyyaml
 requests
+aiohttp

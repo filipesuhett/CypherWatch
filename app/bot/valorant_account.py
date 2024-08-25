@@ -31,7 +31,10 @@ class ValorantAccount:
             has_notificated=data.get('has_notificated', False),  # Default to False if not present
             to_mark=data.get('to_mark', False)  # Default to False if not present
         )
-        
+    
+    def update_nickname(self, nickname):
+        self.account_name = nickname
+    
     def get_user(self, account_name):
         nickname, tag = account_name.split('#')
         url = f'https://api.henrikdev.xyz/valorant/v1/account/{nickname}/{tag}'

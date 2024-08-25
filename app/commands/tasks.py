@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands, tasks
 from bot.config import Config
-from funcs.func_aux import verify_match, account_data
+from funcs.func_aux import verify_match, update_account
 import asyncio
 class PeriodicTaskCog(commands.Cog):
     def __init__(self, bot):
@@ -9,6 +9,7 @@ class PeriodicTaskCog(commands.Cog):
         self.config = Config()
         self.channel_id = 1264224851216957493  # ID do canal como um inteiro
         self.check_situation.start()   # Inicia a tarefa periódica
+        self.update_all_nicknames.start()
 
     @tasks.loop(minutes=10)
     async def check_situation(self):
@@ -43,13 +44,24 @@ class PeriodicTaskCog(commands.Cog):
                     account.has_notificated = False
                 count += 1  # Incrementa o contador
 
-                # # Verifica se já processou 5 contas e, se sim, faz uma pausa de 1 minuto
-                # if count % 6 == 0:
-                #     print("Pausando por 1 minuto...")
-                #     await asyncio.sleep(60)  # Delay de 1 minuto
+    @tasks.loop(hours=1)
+    async def update_all_nicknames(self):
+        await asyncio.sleep(120)
+        print('Updating all nicknames...')
+        for user in self.config.users:
+            for account in user.valorant_accounts:
+                nick_verified = await update_account(account.puuid, account.region, account.account_name)
+                if nick_verified != True:
+                    print(f'old nickname: {account.account_name}, new nickname: {nick_verified}')
+                    account.update_nickname(nick_verified)
+        self.config.save_users()
                     
     @check_situation.before_loop
     async def before_check_situation(self):
+        await self.bot.wait_until_ready()
+        
+    @update_all_nicknames.before_loop
+    async def before_update_all_nicknames(self):
         await self.bot.wait_until_ready()
 
     @commands.Cog.listener()

@@ -12,6 +12,25 @@ def create_progress_bar(value, max_value, length=10):
     bar = '█' * progress + '░' * (length - progress)
     return bar
 
+async def update_account(puuid, region, account_name):
+    url = f"https://api.henrikdev.xyz/valorant/v2/by-puuid/account/{puuid}"
+    params = {}
+    try:
+        data, status = await Config().make_request(url, params=params)
+        if status == 200:
+            player = data.get("data", [])
+            name = player.get("name", "")
+            tag = player.get("tag", "")
+            nickname = f"{name}#{tag}"	
+            if nickname == account_name:
+                return True
+            else:
+                return nickname
+        else:
+            print(f'Error to update account: {status}')
+    except asyncio.TimeoutError:
+        print('Request timed out')
+    return None
 
 async def account_check(account_name):
     nickname, tag = account_name.split('#')
